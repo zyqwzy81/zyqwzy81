@@ -1,0 +1,18 @@
+project:
+  title: "V28 Manuscript"
+  output-dir: manuscript
+
+format:
+  docx:
+    toc: false
+    toc-depth: 2
+    number-sections: false
+  pdf:
+    pdf-engine: weasyprint
+    papersize: a4
+    margin-left: 25mm
+    margin-right: 25mm
+    margin-top: 25mm
+    margin-bottom: 25mm
+
+editor: source
