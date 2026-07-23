@@ -1,52 +1,39 @@
 #!/bin/bash
-# 血磷论文文件一键上传Github脚本
-# 仓库本地路径
-LOCAL_PATH="/data/小米云盘/文档/论文/血磷/github_repo"
-# Github仓库HTTPS地址
-GIT_URL="https://github.com/zyqwzy81/zyqwzy81.git"
-# Github用户名
+# 血磷论文一键上传GitHub脚本
+# -------------------------- 配置区（仅修改这里） --------------------------
 GIT_USER="zyqwzy81"
-# 提交备注
+# Personal access tokens (classic) 占位符，替换为你的真实ghp_开头token
+GIT_TOKEN="YOUR_GITHUB_TOKEN"
+LOCAL_PATH="/data/小米云盘/文档/论文/血磷/github_repo"
 COMMIT_MSG="上传血磷论文相关全部文件"
-# 分支名（你的本地是master）
 BRANCH="master"
+# -----------------------------------------------------------------------------
 
 echo "==================== Git上传脚本开始 ===================="
-# 切换到目标目录
-cd "$LOCAL_PATH" || { echo "错误：目录不存在！$LOCAL_PATH"; exit 1; }
-echo "当前工作目录：$(pwd)"
+# 进入工作目录，目录不存在直接退出
+cd "$LOCAL_PATH" || { echo "错误：目录不存在 $LOCAL_PATH"; exit 1; }
+echo "当前目录：$(pwd)"
 
-# 交互式输入 Personal access token (classic)
-read -s -p "请输入 GitHub Personal access tokens (classic): " GIT_TOKEN
-echo ""
-
-# 1. 清理原有远程origin
-echo "1. 清理旧远程配置..."
+# 清除旧远程配置
 git remote remove origin 2>/dev/null
-
-# 2. 初始化仓库
-echo "2. 初始化Git仓库..."
+# 初始化仓库
 git init
 
-# 3. 绑定带Token鉴权的Github远程仓库
-echo "3. 绑定带Token鉴权的远程地址"
-GIT_AUTH_URL="https://${GIT_USER}:${GIT_TOKEN}@github.com/zyqwzy81/zyqwzy81.git"
-git remote add origin "$GIT_AUTH_URL"
+# 拼接带账号+Token的合法HTTPS地址（格式严格标准，不会串字符）
+AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com/zyqwzy81/zyqwzy81.git"
+git remote add origin "$AUTH_REMOTE"
+echo "已绑定鉴权远程仓库"
 
-# 4. 添加所有文件
-echo "4. 添加目录内全部文件至暂存区..."
+# 添加全部文件
 git add .
 
-# 5. 提交文件
-echo "5. 提交文件，备注：$COMMIT_MSG"
-git commit -m "$COMMIT_MSG" || echo "提示：无新增文件，工作区干净"
+# 提交代码，无文件提交时静默提示
+git commit -m "$COMMIT_MSG" || echo "提示：工作区无新增修改文件"
 
-# 6. 拉取远程代码避免冲突
-echo "6. 拉取远程仓库代码..."
+# 拉取远程代码，合并无关历史
 git pull origin "$BRANCH" --allow-unrelated-histories
 
-# 7. 推送至Github（不再弹窗输入账号密码）
-echo "7. 推送文件到Github $BRANCH 分支"
+# 推送至远程，无需手动输入账号密码
 git push origin "$BRANCH"
 
-echo "==================== 脚本执行完成 ===================="
+echo "==================== 脚本执行结束 ===================="
