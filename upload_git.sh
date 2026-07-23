@@ -19,10 +19,11 @@ git remote remove origin 2>/dev/null
 # 初始化仓库
 git init
 
-# 拼接带账号+Token的合法HTTPS地址（格式严格标准，不会串字符）
-AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com/zyqwzy81/zyqwzy81.git"
+# 使用国内镜像代理，解决TLS连接中断
+AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com.cnpmjs.org/zyqwzy81/zyqwzy81.git"
 git remote add origin "$AUTH_REMOTE"
-echo "已绑定鉴权远程仓库"
+echo "已绑定镜像代理远程仓库"
+
 
 # 添加全部文件
 git add .
