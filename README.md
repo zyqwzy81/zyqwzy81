@@ -1,6 +1,6 @@
 # Intravenous Phosphate Supplementation in ICU Patients with Hypophosphatemia: A Target Trial Emulation Study
 
-This repository contains the analysis code and manuscript for a target trial emulation study evaluating the effect of intravenous phosphate supplementation on 28-day mortality in critically ill patients with hypophosphatemia, using the MIMIC-IV database (2008–2022).
+This repository contains the analysis code for a target trial emulation study evaluating the effect of intravenous phosphate supplementation on 28-day mortality in critically ill patients with hypophosphatemia, using the MIMIC-IV database (2008–2022).
 
 ## Study Overview
 
@@ -32,9 +32,6 @@ This repository contains the analysis code and manuscript for a target trial emu
 │       ├── ccw_engine/                # Batch CCW engine (memory-efficient SEQTaRget alternative)
 │       ├── utils/                     # Helper functions and diagnostics
 │       └── tests/                     # Unit tests
-├── manuscript/
-│   ├── manuscript_en.qmd              # English manuscript (Quarto)
-│   └── manuscript_zh.qmd              # Chinese manuscript (Quarto)
 └── docs/                              # Documentation
 ```
 
@@ -77,11 +74,6 @@ python build_analysis_dataset.py
 ```bash
 cd analysis/r
 Rscript misc/run_all_analyses.R
-```
-
-### Step 3: Render Manuscript
-```bash
-quarto render manuscript/manuscript_en.qmd
 ```
 
 ## Registration

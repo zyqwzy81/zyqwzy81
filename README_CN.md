@@ -1,6 +1,6 @@
 # ICU低磷血症患者静脉补磷治疗：目标试验模拟研究
 
-本仓库包含一项目标试验模拟研究的分析代码和论文稿件，评估静脉补磷对ICU低磷血症患者28天死亡率的影响，数据来源于MIMIC-IV数据库（2008–2022年）。
+本仓库包含一项目标试验模拟研究的分析代码，评估静脉补磷对ICU低磷血症患者28天死亡率的影响，数据来源于MIMIC-IV数据库（2008–2022年）。
 
 ## 研究概述
 
@@ -32,9 +32,6 @@
 │       ├── ccw_engine/                # 分批CCW引擎（SEQTaRget的内存友好替代）
 │       ├── utils/                     # 辅助函数和诊断
 │       └── tests/                     # 单元测试
-├── manuscript/
-│   ├── manuscript_en.qmd              # 英文论文稿件（Quarto）
-│   └── manuscript_zh.qmd              # 中文论文稿件（Quarto）
 └── docs/                              # 文档
 ```
 
@@ -77,11 +74,6 @@ python build_analysis_dataset.py
 ```bash
 cd analysis/r
 Rscript misc/run_all_analyses.R
-```
-
-### 第三步：渲染稿件
-```bash
-quarto render manuscript/manuscript_en.qmd
 ```
 
 ## 研究注册
