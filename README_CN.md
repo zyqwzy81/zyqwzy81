@@ -28,7 +28,6 @@
 │       ├── secondary/                 # 次要结局分析
 │       ├── subgroup/                  # 亚组分析
 │       ├── interaction/               # 交互检验
-│       ├── figures/                   # 发表级图表生成
 │       ├── external_validation/       # eICU外部验证
 │       ├── ccw_engine/                # 分批CCW引擎（SEQTaRget的内存友好替代）
 │       ├── utils/                     # 辅助函数和诊断
@@ -80,13 +79,7 @@ cd analysis/r
 Rscript misc/run_all_analyses.R
 ```
 
-### 步骤3：生成图表
-```bash
-Rscript -e "source('figures/publication_figures.R')"
-Rscript -e "source('figures/regenerate_all_figures.R')"
-```
-
-### 步骤4：渲染论文
+### 第三步：渲染稿件
 ```bash
 quarto render manuscript/manuscript_en.qmd
 ```

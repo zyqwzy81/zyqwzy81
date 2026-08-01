@@ -28,7 +28,6 @@ This repository contains the analysis code and manuscript for a target trial emu
 │       ├── secondary/                 # Secondary outcomes analysis
 │       ├── subgroup/                  # Subgroup analyses
 │       ├── interaction/               # Interaction tests
-│       ├── figures/                   # Publication-grade figure generation
 │       ├── external_validation/       # eICU external validation
 │       ├── ccw_engine/                # Batch CCW engine (memory-efficient SEQTaRget alternative)
 │       ├── utils/                     # Helper functions and diagnostics
@@ -80,13 +79,7 @@ cd analysis/r
 Rscript misc/run_all_analyses.R
 ```
 
-### Step 3: Generate Figures
-```bash
-Rscript -e "source('figures/publication_figures.R')"
-Rscript -e "source('figures/regenerate_all_figures.R')"
-```
-
-### Step 4: Render Manuscript
+### Step 3: Render Manuscript
 ```bash
 quarto render manuscript/manuscript_en.qmd
 ```
