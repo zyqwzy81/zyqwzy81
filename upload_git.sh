@@ -16,14 +16,12 @@ echo "当前目录：$(pwd)"
 
 # 清除旧远程配置
 git remote remove origin 2>/dev/null
-# 初始化仓库
-git init
 
-# 使用国内镜像代理，解决TLS连接中断
-AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com.cnpmjs.org/zyqwzy81/zyqwzy81.git"
+# 使用官方 GitHub 地址（如遇 TLS 连接问题，可取消注释下行 SSL 验证跳过）
+# 注意：github.com.cnpmjs.org 镜像代理已失效，不再使用
+AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com/zyqwzy81/zyqwzy81.git"
 git remote add origin "$AUTH_REMOTE"
-echo "已绑定镜像代理远程仓库"
-
+echo "已绑定远程仓库: github.com/zyqwzy81/zyqwzy81"
 
 # 添加全部文件
 git add .
@@ -32,9 +30,10 @@ git add .
 git commit -m "$COMMIT_MSG" || echo "提示：工作区无新增修改文件"
 
 # 拉取远程代码，合并无关历史
-git pull origin "$BRANCH" --allow-unrelated-histories
+git pull origin "$BRANCH" --allow-unrelated-histories 2>/dev/null || true
 
-# 推送至远程，无需手动输入账号密码
+# 推送至远程（如遇SSL错误，可取消下行注释）
+# export GIT_SSL_NO_VERIFY=1
 git push origin "$BRANCH"
 
 echo "==================== 脚本执行结束 ===================="
