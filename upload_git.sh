@@ -14,14 +14,16 @@ echo "==================== Git上传脚本开始 ===================="
 cd "$LOCAL_PATH" || { echo "错误：目录不存在 $LOCAL_PATH"; exit 1; }
 echo "当前目录：$(pwd)"
 
-# 清除旧远程配置
-git remote remove origin 2>/dev/null
-
-# 使用官方 GitHub 地址（如遇 TLS 连接问题，可取消注释下行 SSL 验证跳过）
-# 注意：github.com.cnpmjs.org 镜像代理已失效，不再使用
-AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com/zyqwzy81/zyqwzy81.git"
-git remote add origin "$AUTH_REMOTE"
-echo "已绑定远程仓库: github.com/zyqwzy81/zyqwzy81"
+# 若 origin 已存在（含已配置的凭据），复用现有配置，避免覆盖真实 token
+if git remote get-url origin >/dev/null 2>&1; then
+  echo "已存在 origin，复用现有远程配置（保留已配置凭据）"
+else
+  # 使用官方 GitHub 地址（如遇 TLS 连接问题，可取消注释下行 SSL 验证跳过）
+  # 注意：github.com.cnpmjs.org 镜像代理已失效，不再使用
+  AUTH_REMOTE="https://${GIT_USER}:${GIT_TOKEN}@github.com/zyqwzy81/zyqwzy81.git"
+  git remote add origin "$AUTH_REMOTE"
+  echo "已绑定远程仓库: github.com/zyqwzy81/zyqwzy81"
+fi
 
 # 添加全部文件
 git add .

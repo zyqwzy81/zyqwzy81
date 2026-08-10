@@ -192,9 +192,10 @@ rubin_pool <- function(imp_results) {
   total_var <- u_bar + (1 + 1/m) * b_var
   se_pooled <- sqrt(total_var)
 
-  # df
-  df_old <- (m - 1) * (1 + u_bar / ((1 + 1/m) * b_var))^2
-  df <- df_old * (1 + m * u_var_adj(b_var, u_bar, m))
+  # df（Rubin 1987 标量 df：df = (m-1) * (1 + 1/r)^2, r = ((1+1/m)*B)/U）
+  # 注：此前版本误乘 (1 + m * u_bar/((1+1/m)*b_var)) 多余因子导致 df 被高估、
+  #     p 值偏小；已按 Rubin 规则修正（2026-08-08 方法学终审 P2）。
+  df <- (m - 1) * (1 + u_bar / ((1 + 1/m) * b_var))^2
   df <- ifelse(is.na(df) | df <= 0, m - 1, df)
 
   return(list(
@@ -208,11 +209,6 @@ rubin_pool <- function(imp_results) {
     B        = b_var,
     df       = df
   ))
-}
-
-u_var_adj <- function(b_var, u_bar, m) {
-  if (b_var < 1e-10) return(0)
-  return(u_bar / ((1 + 1/m) * b_var))
 }
 
 # ============================================================================
@@ -333,7 +329,8 @@ ddist <- datadist(dt_rcs)
 options(datadist = 'ddist')
 
 # 拟合 RCS 交互模型
-# 模型：Surv(surv_time, death) ~ tx_int * rcs(baseline_phosphate, 4) + DAG13
+# 模型：Surv(surv_time, death) ~ tx_int * rcs(baseline_phosphate, 4) + DAG14(排除 baseline_phosphate)
+# 注：RCS 为探索性分析，基于单插补数据集（imp01），见 L310 注释
 rcs_formula <- as.formula(sprintf(
   "Surv(surv_time, death_28day_num) ~ tx_int * rcs(baseline_phosphate, 4) + %s",
   paste(intersect(DAG14_BASE, names(dt_rcs)), collapse = " + ")
@@ -414,7 +411,7 @@ if (length(threshold_results) > 0) {
   log_info(sprintf("HR 网格已保存: %s", hr_grid_csv))
 
   # 绘制效应曲线（阶梯图 + 误差棒）
-  png(file.path(FIG_DIR, "FigS_Phosphate_Threshold_HR_Curve.png"),
+  png(file.path(FIG_DIR, "FigS14_Phosphate_Threshold_HR_Curve.png"),
       width = 10, height = 7, units = "in", res = 300)
   par(mar = c(5.5, 5, 4, 2), family = "sans")
 
@@ -475,14 +472,14 @@ if (length(threshold_results) > 0) {
          bty = "n", cex = 0.9)
 
   # 副标题（关键统计量）
-  mtext("SEQTaRget CCW + DAG14 + cluster-robust SE + m=20 Rubin's rules",
+  mtext("Cox + DAG14 (excl. baseline_phosphate) + cluster-robust SE + m=20 Rubin's rules",
         side = 3, line = 0.3, cex = 0.7, col = "#666666", adj = 0)
 
   dev.off()
   log_info("效应曲线图已保存")
 
   # 同时输出 PDF 矢量版本
-  pdf(file.path(FIG_DIR, "FigS_Phosphate_Threshold_HR_Curve.pdf"),
+  pdf(file.path(FIG_DIR, "FigS14_Phosphate_Threshold_HR_Curve.pdf"),
       width = 10, height = 7)
   par(mar = c(5.5, 5, 4, 2), family = "sans")
   plot(NA, xlim = xlim, ylim = ylim,
@@ -518,7 +515,7 @@ if (length(threshold_results) > 0) {
          lwd = c(NA, NA, 1.5),
          col = c("#0072B5", "#BC3C29", "#E74C3C"),
          bty = "n", cex = 0.9)
-  mtext("SEQTaRget CCW + DAG14 + cluster-robust SE + m=20 Rubin's rules",
+  mtext("Cox + DAG14 (excl. baseline_phosphate) + cluster-robust SE + m=20 Rubin's rules",
         side = 3, line = 0.3, cex = 0.7, col = "#666666", adj = 0)
   dev.off()
   log_info("PDF 矢量图已保存")
@@ -536,7 +533,7 @@ cat("  V28 磷酸保护性阈值分析完成\n")
 cat("============================================================\n")
 cat(sprintf("  多切点结果: %s\n", threshold_csv))
 cat(sprintf("  HR 网格:    %s\n", file.path(OUT_DIR, "v28_phosphate_threshold_hr_grid.csv")))
-cat(sprintf("  效应曲线:   %s\n", file.path(FIG_DIR, "FigS_Phosphate_Threshold_HR_Curve.png")))
+cat(sprintf("  效应曲线:   %s\n", file.path(FIG_DIR, "FigS14_Phosphate_Threshold_HR_Curve.png")))
 cat(sprintf("  日志:       %s\n", log_file))
 cat("\n")
 

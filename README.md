@@ -5,11 +5,11 @@ This repository contains the analysis code for a target trial emulation study ev
 ## Study Overview
 
 - **Design**: Sequential target trial emulation (Cloning, Censoring, Weighting framework)
-- **Population**: ICU patients with hypophosphatemia (phosphate <0.80 mmol/L)
+- **Population**: ICU patients with mild-to-moderate hypophosphatemia (phosphate 0.32–0.80 mmol/L)
 - **Exposure**: Intravenous phosphate supplementation within 24 hours of hypophosphatemia detection
 - **Primary Outcome**: 28-day all-cause mortality
 - **Analysis Method**: ITT analysis via SEQTaRget R package, with PP and CCW sensitivity analyses
-- **Key Findings**: No significant overall mortality benefit (HR=0.987; 95% CI, 0.893–1.092; p=0.802), with potential protective effect in severe hypophosphatemia (phosphate <0.50 mmol/L; HR=0.806; p=0.022)
+- **Key Findings**: No significant overall mortality benefit (HR=0.987; 95% CI, 0.893–1.092; p=0.802), with a potential protective effect in the lower end of the mild-to-moderate range (baseline phosphate <0.50 mmol/L; HR=0.806; p=0.022)
 
 ## Repository Structure
 
