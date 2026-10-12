@@ -9,42 +9,44 @@ This repository contains the analysis code for a target trial emulation study ev
 - **Exposure**: Intravenous phosphate supplementation within 24 hours of hypophosphatemia detection
 - **Primary Outcome**: 28-day all-cause mortality
 - **Analysis Method**: ITT analysis via SEQTaRget R package, with PP and CCW sensitivity analyses
-- **Key Findings**: No significant overall mortality benefit (HR=0.987; 95% CI, 0.893–1.092; p=0.802), with a potential protective effect in the lower end of the mild-to-moderate range (baseline phosphate <0.50 mmol/L; HR=0.806; p=0.022)
+- **Key Findings**: No significant overall mortality benefit (HR=0.982; 95% CI, 0.897–1.076; p=0.695). A lower phosphate-stratum exploratory result (baseline phosphate <0.50 mmol/L; HR=0.765; p=0.0097 for interaction) was downgraded to hypothesis-generating because of unit-dependence and lack of multiplicity correction; stay-level sensitivity was non-significant (HR=0.746; p=0.117).
 
 ## Repository Structure
 
 ```
 .
-├── README.md                          # This file
-├── README_CN.md                       # Chinese version of README
+├── README.md                              # This file
+├── README_CN.md                           # Chinese version of README
 ├── data_extraction/
-│   ├── python/                        # Python scripts for data extraction (PostgreSQL → Parquet)
-│   └── sql/pure_control/              # SQL for the post-hoc pure-control analyses (M0_40–M0_48)
+│   ├── python/                            # Python scripts for data extraction (PostgreSQL → Parquet)
+│   │   ├── extract_event_times.py         #   KDIGO stages + PRBC infusion event times for v28.4 secondary outcomes
+│   │   ├── build_sequential_trials.py     #   Sequential trial origin construction (predecessor of all analyses)
+│   │   ├── augment_full_dataset.py        #   Augmented trial-level dataset with baseline covariates
+│   │   └── …                              #   Other pre-analysis data builders
+│   └── sql/pure_control/                  # SQL for the post-hoc pure-control analyses (M0_40–M0_48)
 ├── analysis/
 │   └── r/
-│       ├── v28.4/                     # Revision code (current): multi-enrollment SEQTaRget pipeline
-│       │   ├── pure_control/          # Post-hoc IV vs no-supplement mechanism analyses (PC01–PC12b)
-│       │   └── v28.4_*.R              # Main/PP/subgroup/piecewise/secondary/continuous/90-day/Figure 2
-│       ├── config/                    # Configuration files (covariates, paths, parameters)
-│       ├── main/                      # Primary ITT analysis (original submission)
-│       ├── pp_analysis/               # Per-protocol analysis
-│       ├── sensitivity/               # Sensitivity analyses (CCA, grace period, truncation, MNAR, LASSO vs DAG)
-│       ├── secondary/                 # Secondary outcomes analysis
-│       ├── subgroup/                  # Subgroup analyses
-│       ├── interaction/               # Interaction tests
-│       ├── external_validation/       # eICU external validation
-│       ├── ccw_engine/                # Batch CCW engine (memory-efficient SEQTaRget alternative)
-│       ├── utils/                     # Helper functions and diagnostics
-│       └── tests/                     # Unit tests
-└── docs/                              # Documentation
+│       ├── main_multi.R                   # Main ITT (trial-period level sequential target trial)
+│       ├── piecewise_multi.R              # Piecewise hazards + per-protocol with IPCW
+│       ├── subgroup_multi.R               # Subgroup heterogeneity tests (trial-period level)
+│       ├── secondary_multi.R              # Secondary outcomes (binary + continuous, MI-bootstrap)
+│       ├── death90_multi.R                # 90-day mortality (patients.dod source-verified)
+│       ├── fig2_fullkm.R                  # Full-horizon weighted Kaplan–Meier (no discharge truncation)
+│       ├── binary_continuous.R            # Binary + continuous secondary outcomes (stay-level sensitivity)
+│       ├── daily_threshold.R              # Daily threshold sweep (stay-level)
+│       ├── stay_common.R / multi_common.R / common.R   # Shared modules (stay-level / trial-period / generic)
+│       ├── generate_all_figures.R         # Publication figures (consumes result tables)
+│       └── pure_control/                  # Post-hoc IV vs no-supplement mechanism analyses (PC01–PC12b)
+└── .gitignore
 ```
 
-## Code Versions
+## Analysis Code
 
-- **v28.4 (`analysis/r/v28.4/`, current — journal revision)**: rebuilt multi-enrollment (trial-period level) sequential target trial emulation with a natural-calendar daily timeline, including ITT/PP main analyses, subgroup and piecewise hazards, 90-day mortality, secondary binary/continuous outcomes, the full-horizon weighted Kaplan–Meier analysis, and the post-hoc pure-control analyses (`pure_control/`). Common modules: `v28.4_common.R`, `v28.4_multi_common.R`, `v28.4_stay_common.R`.
-- The stage-organized directories (`main/`, `pp_analysis/`, `sensitivity/`, …) contain the original v28.3 submission code retained for reference.
+All committed R scripts implement the **revision** analysis (journal major-revision round, 2026-10-10), using a rebuilt **trial-period level sequential target trial emulation** with a natural-calendar daily timeline. This is the definitive analysis for the manuscript. Common modules: `common.R`, `multi_common.R`, `stay_common.R`. Source scripts still embed absolute paths (`/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/...`) to their local working locations — the version prefix has been stripped from filenames inside the repo, but the local path prefix intentionally remains so that scripts continue to run on the author's workstation.
 
-**Database credential**: scripts never embed the PostgreSQL password. Set it via the `MIMIC_PG_PASSWORD` environment variable before running any script that connects to the local MIMIC-IV database (e.g. `MIMIC_PG_PASSWORD=xxx Rscript v28.4_secondary_outcomes.R`).
+**Database credential**: scripts never embed the PostgreSQL password. Set it via the `MIMIC_PG_PASSWORD` environment variable before running any script that connects to the local MIMIC-IV database (e.g. `MIMIC_PG_PASSWORD=xxx Rscript secondary_outcomes.R`).
+
+**Patient-level data (parquet, csv) is not committed** — the analysis tables they produce are written locally; authors with PhysioNet credentialing can rebuild them from MIMIC-IV using the `data_extraction/python/` scripts.
 
 ## Dependencies
 
