@@ -18,11 +18,15 @@
 ├── README.md                          # 英文说明
 ├── README_CN.md                       # 本文件（中文说明）
 ├── data_extraction/
-│   └── python/                        # 数据提取Python脚本（PostgreSQL → Parquet）
+│   ├── python/                        # 数据提取Python脚本（PostgreSQL → Parquet）
+│   └── sql/pure_control/              # 纯对照 post-hoc 分析的 SQL（M0_40–M0_48）
 ├── analysis/
 │   └── r/
+│       ├── v28.4/                     # 修回代码（当前版本）：多次入组 SEQTaRget 管线
+│       │   ├── pure_control/          # IV vs 无补充 post-hoc 机制分析（PC01–PC12b）
+│       │   └── v28.4_*.R              # 主分析/PP/亚组/分段/次要/连续/90天/Figure 2
 │       ├── config/                    # 配置文件（协变量、路径、参数）
-│       ├── main/                      # 主要ITT分析
+│       ├── main/                      # 主要ITT分析（投稿原始版本）
 │       ├── pp_analysis/               # 符合方案分析
 │       ├── sensitivity/               # 敏感性分析（CCA、宽限期、截断、MNAR、LASSO vs DAG）
 │       ├── secondary/                 # 次要结局分析
@@ -34,6 +38,13 @@
 │       └── tests/                     # 单元测试
 └── docs/                              # 文档
 ```
+
+## 代码版本
+
+- **v28.4（`analysis/r/v28.4/`，当前版本——期刊修回）**：重建的多次入组（trial-period 级）序贯目标试验模拟，采用自然日历日级时间线，包含 ITT/PP 主分析、亚组与分段风险比、90 天死亡率、次要二分类/连续结局、全随访加权 Kaplan–Meier 分析，以及 post-hoc 纯对照分析（`pure_control/`）。公共模块：`v28.4_common.R`、`v28.4_multi_common.R`、`v28.4_stay_common.R`。
+- 按分析阶段组织的目录（`main/`、`pp_analysis/`、`sensitivity/` 等）为投稿原始 v28.3 代码，保留备查。
+
+**数据库口令**：所有脚本均不内嵌 PostgreSQL 口令。运行任何连接本地 MIMIC-IV 数据库的脚本前，请通过环境变量 `MIMIC_PG_PASSWORD` 设置（例如 `MIMIC_PG_PASSWORD=xxx Rscript v28.4_secondary_outcomes.R`）。
 
 ## 依赖
 

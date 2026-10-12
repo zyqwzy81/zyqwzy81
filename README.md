@@ -18,11 +18,15 @@ This repository contains the analysis code for a target trial emulation study ev
 ├── README.md                          # This file
 ├── README_CN.md                       # Chinese version of README
 ├── data_extraction/
-│   └── python/                        # Python scripts for data extraction (PostgreSQL → Parquet)
+│   ├── python/                        # Python scripts for data extraction (PostgreSQL → Parquet)
+│   └── sql/pure_control/              # SQL for the post-hoc pure-control analyses (M0_40–M0_48)
 ├── analysis/
 │   └── r/
+│       ├── v28.4/                     # Revision code (current): multi-enrollment SEQTaRget pipeline
+│       │   ├── pure_control/          # Post-hoc IV vs no-supplement mechanism analyses (PC01–PC12b)
+│       │   └── v28.4_*.R              # Main/PP/subgroup/piecewise/secondary/continuous/90-day/Figure 2
 │       ├── config/                    # Configuration files (covariates, paths, parameters)
-│       ├── main/                      # Primary ITT analysis
+│       ├── main/                      # Primary ITT analysis (original submission)
 │       ├── pp_analysis/               # Per-protocol analysis
 │       ├── sensitivity/               # Sensitivity analyses (CCA, grace period, truncation, MNAR, LASSO vs DAG)
 │       ├── secondary/                 # Secondary outcomes analysis
@@ -34,6 +38,13 @@ This repository contains the analysis code for a target trial emulation study ev
 │       └── tests/                     # Unit tests
 └── docs/                              # Documentation
 ```
+
+## Code Versions
+
+- **v28.4 (`analysis/r/v28.4/`, current — journal revision)**: rebuilt multi-enrollment (trial-period level) sequential target trial emulation with a natural-calendar daily timeline, including ITT/PP main analyses, subgroup and piecewise hazards, 90-day mortality, secondary binary/continuous outcomes, the full-horizon weighted Kaplan–Meier analysis, and the post-hoc pure-control analyses (`pure_control/`). Common modules: `v28.4_common.R`, `v28.4_multi_common.R`, `v28.4_stay_common.R`.
+- The stage-organized directories (`main/`, `pp_analysis/`, `sensitivity/`, …) contain the original v28.3 submission code retained for reference.
+
+**Database credential**: scripts never embed the PostgreSQL password. Set it via the `MIMIC_PG_PASSWORD` environment variable before running any script that connects to the local MIMIC-IV database (e.g. `MIMIC_PG_PASSWORD=xxx Rscript v28.4_secondary_outcomes.R`).
 
 ## Dependencies
 

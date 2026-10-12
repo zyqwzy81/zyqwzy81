@@ -1,0 +1,29 @@
+# ---- Patient-level data (MIMIC-IV/PhysioNet DUA; never upload) ----
+*.csv
+*.parquet
+*.feather
+*.sas7bdat
+*.dta
+*.rds
+*.RData
+*.rda
+
+# ---- R ----
+.Rhistory
+.Rapp.history
+.Rdata
+renv/
+packrat/
+
+# ---- Python ----
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# ---- OS / editor ----
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
