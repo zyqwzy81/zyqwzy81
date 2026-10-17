@@ -1,5 +1,5 @@
 # ============================================================================
-# main_multi.R
+# v28.4_main_multi.R
 # 多次入组（multi-enrollment）序贯目标试验：主结局全因死亡的 g-formula HR
 #
 # 功能开关：
@@ -11,7 +11,7 @@
 #                     抽样方差取指定 imp 的 bootstrap + Rubin imp 间方差）
 # 版本 V28.4  日期 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/multi_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_multi_common.R")
 
 argv <- commandArgs(trailingOnly = TRUE)
 gv <- function(k, d) { i <- match(k, argv); if (is.na(i)) d else argv[i + 1] }
@@ -87,5 +87,5 @@ cat("\n========== MAIN multi-enrollment ==========\n")
 print(res)
 
 suffix <- paste0(if (FIRST) "firstonly_" else "", "h", HORIZON, "_", TAG)
-fwrite(res, file.path(OUT_T, paste0("main_", suffix, ".csv")))
-cat("saved:", file.path(OUT_T, paste0("main_", suffix, ".csv")), "\n")
+fwrite(res, file.path(OUT_T, paste0("v28.4_main_", suffix, ".csv")))
+cat("saved:", file.path(OUT_T, paste0("v28.4_main_", suffix, ".csv")), "\n")

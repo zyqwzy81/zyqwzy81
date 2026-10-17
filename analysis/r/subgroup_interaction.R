@@ -1,10 +1,10 @@
 # ============================================================================
-# subgroup_interaction.R
+# v28.4_subgroup_interaction.R
 # stay 唯一队列：18 亚组（9 变量×2 层）+ 10 乘法交互
 # 稳定化 IPTW + coxph 稳健 SE + Rubin m=20（探索性，与 v28.3 方法一致，无 bootstrap）
 # 版本: V28.4  日期: 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/stay_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_stay_common.R")
 OUTDIR <- file.path(V28_BASE, "TTE/v28.4/output/tables/nonprimary_redo")
 dir.create(OUTDIR, recursive = TRUE, showWarnings = FALSE)
 
@@ -148,7 +148,7 @@ res_int <- rbindlist(lapply(int_def, function(sp) {
 res_int[, q_value := p.adjust(p_value, method = "BH")]
 res_int[, significant := ifelse(q_value < 0.10, "q<0.10", "NS")]
 
-fwrite(res_sub, file.path(OUTDIR, "subgroup.csv"))
-fwrite(res_int, file.path(OUTDIR, "interaction.csv"))
+fwrite(res_sub, file.path(OUTDIR, "v28.4_subgroup.csv"))
+fwrite(res_int, file.path(OUTDIR, "v28.4_interaction.csv"))
 cat("\n=== Subgroups ===\n"); print(res_sub)
 cat("\n=== Interactions ===\n"); print(res_int)

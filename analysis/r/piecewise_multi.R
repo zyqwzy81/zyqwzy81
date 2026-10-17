@@ -1,5 +1,5 @@
 # ============================================================================
-# piecewise_multi.R
+# v28.4_piecewise_multi.R
 # 多次入组（multi-enrollment）框架下：分段 HR（0-3/3-7/7-14/14-28 天）
 #
 # 由包 g-formula（ITT，km.curves 风险路径）给出分段边界累积风险 R(t)，
@@ -11,7 +11,7 @@
 # 开关：--imps/--nboot/--bootimps/--firstonly/--tag
 # 版本 V28.4  日期 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/multi_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_multi_common.R")
 
 argv <- commandArgs(trailingOnly = TRUE)
 gv <- function(k, d) { i <- match(k, argv); if (is.na(i)) d else argv[i + 1] }
@@ -24,6 +24,9 @@ FIRST  <- "--firstonly" %in% argv
 
 OUT_T <- file.path(V28_BASE, "TTE/v28.4/output/tables/piecewise_multi")
 dir.create(OUT_T, recursive = TRUE, showWarnings = FALSE)
+
+suffix <- paste0(if (FIRST) "firstonly_" else "", TAG)
+PER_F <- file.path(OUT_T, paste0("v28.4_piecewise_", suffix, "_per_imp.csv"))
 
 EDGES <- c(0L, 3L, 7L, 14L, 28L)
 BOUND <- c(3L, 7L, 14L, 28L)
@@ -80,7 +83,41 @@ run_imp <- function(imp_id) {
   stop(sprintf("[piecewise] imp %d: bootstrap SE unavailable after %d attempts; refusing to write NA CIs", imp_id, MAXTRY))
 }
 
-per_imp <- lapply(IMPS, run_imp)
+# ---- checkpoint ----
+done_imps <- if (file.exists(PER_F)) {
+  x <- fread(PER_F, colClasses = list(imp = "integer"))$imp
+  sort(unique(x))
+} else integer(0)
+todo <- setdiff(IMPS, done_imps)
+if (length(done_imps) > 0 && !setequal(done_imps, intersect(done_imps, IMPS))) {
+  cat(sprintf("[checkpoint] PER_F imps=%s ⊄ IMPS → reset\n",
+              paste(done_imps, collapse = ",")))
+  file.remove(PER_F); done_imps <- integer(0); todo <- IMPS
+}
+cat(sprintf("[checkpoint] todo=%s done=%s\n",
+            if (length(todo)) paste(todo, collapse = ",") else "(none)",
+            if (length(done_imps)) paste(done_imps, collapse = ",") else "(none)"))
+
+# ---- 跨 imp 执行（长表 per_imp：imp × boundary_index × R0/R1/SE0/SE1）----
+for (k in seq_along(todo)) {
+  im <- todo[k]
+  M <- run_imp(im)
+  per_rows <- data.table(imp = im, bi = seq_len(nrow(M)),
+                         R0 = M[, "R0"], R1 = M[, "R1"],
+                         SE0 = M[, "SE0"], SE1 = M[, "SE1"])
+  fwrite(per_rows, PER_F, append = file.exists(PER_F))
+  rm(M, per_rows); invisible(gc())
+}
+
+# ---- 从 PER_F 重建 per_imp 列表（list of matrix）----
+per_dt <- fread(PER_F, colClasses = list(imp = "integer"))
+stopifnot(setequal(sort(unique(per_dt$imp)), IMPS))
+per_imp <- lapply(IMPS, function(im) {
+  sub <- per_dt[imp == im][order(bi)]
+  M <- as.matrix(sub[, .(R0, R1, SE0, SE1)])
+  rownames(M) <- BOUND
+  M
+})
 m <- length(IMPS)
 
 # 逐段：从每 imp 边界风险换算 HR；delta 法 SE
@@ -128,7 +165,7 @@ segments <- lapply(1:4, function(ii) {
   } else {
     warning(sprintf("[piecewise] segment %s: no finite bootstrap SE in any imputation (bootstrap may have degraded under memory pressure); CI=NA", ILAB[ii]))
   }
-  # Rubin 合并（Barnard-Rubin df + t，与 common.R 完全一致）
+  # Rubin 合并（Barnard-Rubin df + t，与 v28.4_main_multi.R 完全一致）
   ubar <- if (is.finite(se_loghr)) se_loghr^2 else NA_real_
   tv <- if (is.finite(ubar)) ubar + (1 + 1 / m) * bv else NA_real_
   dfm <- if (is.finite(tv) && bv > 0) (m - 1) * (1 + ubar / ((1 + 1 / m) * bv))^2 else Inf
@@ -143,5 +180,5 @@ segments <- lapply(1:4, function(ii) {
 res <- rbindlist(segments)
 cat("\n========== PIECEWISE multi-enrollment ==========\n"); print(res)
 suffix <- paste0(if (FIRST) "firstonly_" else "", TAG)
-fwrite(res, file.path(OUT_T, paste0("piecewise_", suffix, ".csv")))
-cat("saved:", file.path(OUT_T, paste0("piecewise_", suffix, ".csv")), "\n")
+fwrite(res, file.path(OUT_T, paste0("v28.4_piecewise_", suffix, ".csv")))
+cat("saved:", file.path(OUT_T, paste0("v28.4_piecewise_", suffix, ".csv")), "\n")

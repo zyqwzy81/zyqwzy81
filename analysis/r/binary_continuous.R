@@ -1,12 +1,12 @@
 # ============================================================================
-# binary_continuous.R
+# v28.4_binary_continuous.R
 # stay 唯一队列：二分类次要结局（死亡/CV/输血）+ 连续结局（VFD/LOS）
 # 稳定化 IPTW + m=20 Rubin + B=200 bootstrap（百分位 CI）
 # 每个 (imp, boot) 只拟合一次 PS/权重，所有结局共用。
-# AKI 已在 common.R 重算；90 天以 patients.dod 核验（4,799）。
+# AKI 已在 v28.4_aki_transfusion.R 重算；90 天以 patients.dod 核验（4,799）。
 # 版本: V28.4  日期: 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/stay_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_stay_common.R")
 
 OUTDIR <- file.path(V28_BASE, "TTE/v28.4/output/tables/nonprimary_redo")
 dir.create(OUTDIR, recursive = TRUE, showWarnings = FALSE)
@@ -105,7 +105,7 @@ assemble_lin <- function(jj, sp) {
 }
 res_lin <- rbindlist(Map(assemble_lin, seq_len(NL), lin_specs))
 
-fwrite(res_bin, file.path(OUTDIR, "binary_OR.csv"))
-fwrite(res_lin, file.path(OUTDIR, "continuous_beta.csv"))
+fwrite(res_bin, file.path(OUTDIR, "v28.4_binary_OR.csv"))
+fwrite(res_lin, file.path(OUTDIR, "v28.4_continuous_beta.csv"))
 cat("\n=== Binary ===\n"); print(res_bin)
 cat("\n=== Continuous ===\n"); print(res_lin)

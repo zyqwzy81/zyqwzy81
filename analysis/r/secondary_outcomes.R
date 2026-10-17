@@ -8,8 +8,8 @@
 #   方法：DAG14 估 PS -> 稳定化 IPTW（1/99 截断）-> 加权组间风险、RD、RR；
 #         m=20，B=200 MI-bootstrap（随机 imp × subject 重抽 × 重估 PS）
 # 用法:
-#   验证: Rscript secondary_outcomes.R --imps 1 --nboot 0 --tag imp1
-#   全量: Rscript secondary_outcomes.R --imps 1..20 --nboot 200
+#   验证: Rscript v28.4_secondary_outcomes.R --imps 1 --nboot 0 --tag imp1
+#   全量: Rscript v28.4_secondary_outcomes.R --imps 1..20 --nboot 200
 # 须 LD_LIBRARY_PATH=/opt/miniforge3/lib   V28.4  2026-10-10
 # ============================================================================
 suppressPackageStartupMessages({library(data.table);library(arrow)})
@@ -122,8 +122,8 @@ if(NBOOT>0){
   final<-rbindlist(res_l)
   cat("\n===== Bootstrap 95% CI (B=",NBOOT,") =====\n",sep="")
   print(final)
-  fwrite(final,file.path(OUT_T,paste0("secondary_",TAG,".csv")))
+  fwrite(final,file.path(OUT_T,paste0("v28.4_secondary_",TAG,".csv")))
   fwrite(as.data.table(as.data.frame(boot_arr[,,,drop=TRUE])),
-         file.path(OUT_T,paste0("secondary_bootraw_",TAG,".csv")))
+         file.path(OUT_T,paste0("v28.4_secondary_bootraw_",TAG,".csv")))
 }
 cat("\ndone tag =",TAG,"\n")

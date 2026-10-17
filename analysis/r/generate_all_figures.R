@@ -2,13 +2,13 @@
 # =============================================================================
 # V28.4 ROUTE-A 统一绘图：trial-period 级 SEQTaRget
 #   * Figure 1 CONSORT（trial-period framing）
-#   * Figure 2 STE counterfactual survival curve（已由 common.R 生成）
+#   * Figure 2 STE counterfactual survival curve（已由 v28.4_ste_survival_curve.R 生成）
 #   * Figure 3 亚组 Forest（trial-period 级）
 #   * Figure 4 分段 HR（trial-period 级）
 #   * S1/S5/S6/S7/S11
 #   * 统一 ICM 期刊格式（176mm / 600 DPI / Helvetica）
-#   * 全部 trial-period 口径，n=32,330 入组 / 5,610 死亡 / IV n=5,147
-#   * SEQTaRget HR=0.970 (0.890,1.057) p=0.489
+#   * 全部 trial-period 口径，n=32,330 入组 / 5,648 死亡 / IV n=5,147
+#   * SEQTaRget HR=0.958 (0.880,1.042) p=0.315
 # =============================================================================
 suppressPackageStartupMessages({
   library(ggplot2); library(data.table); library(grid); library(scales)
@@ -318,7 +318,7 @@ draw_forest <- function(df, title, subtitle, filename,
 # Figure 3 — 亚组森林图 (v28.4_subgroup.csv + 主估计量)
 # =============================================================================
 cat("\n===== Figure 3: Subgroup Forest =====\n")
-sg <- fread(file.path(TABLES, "nonprimary_redo/v28.4_subgroup.csv"))
+sg <- fread(file.path(TABLES, "subgroup_multi/v28.4_subgroup_TP.csv"))
 # 重新命名美化 + 加交互 p
 sg_map <- c(
   "Phosphate >= 0.50 mmol/L"="Baseline phosphate \u22650.50 mmol/L",
@@ -352,10 +352,11 @@ sg$grp[grepl("Age|Female|Male", sg$label)] <- groups[3]
 sg$grp[grepl("ventilation|vasoactive", sg$label)] <- groups[4]
 sg$grp[is.na(sg$grp)] <- groups[5]
 
-# 主估计量放最上面（Route A: SEQTaRget trial-period level）
-main_est <- data.table(label="**Overall SEQTaRget CCW ITT**", hr=0.970, ci_lower=0.890, ci_upper=1.057,
-                       n=32330, n_events=5610, p_value=0.489,
-                       est_p="0.970 (0.890\u20131.057) p=0.489", grp="Overall")
+# 主估计量放最上面（Route A: SEQTaRget trial-period level, m=20 Rubin pooled）
+# 来源：v28.4_main_batch50.csv 的 driver 日志 Rubin 合并值（死亡日修复后）
+main_est <- data.table(label="**Overall SEQTaRget CCW ITT**", hr=0.959, ci_lower=0.881, ci_upper=1.044,
+                       n=32330, n_events=5648, p_value=0.337,
+                       est_p="0.959 (0.881\u20131.044) p=0.337", grp="Overall")
 sg2 <- rbind(main_est[, .(label, hr, ci_lower, ci_upper, est_p, grp="Overall")],
              sg[, .(label, hr, ci_lower, ci_upper, est_p, grp)])
 
@@ -374,9 +375,9 @@ pw <- fread(file.path(TABLES, "piecewise_multi/v28.4_piecewise_TP.csv"))
 pw$label <- c("0\u20133 days", "3\u20137 days", "7\u201314 days", "14\u201328 days")
 pw$est_p <- sprintf("%.3f", pw$hr)
 
-pw2 <- rbind(data.table(label="**Overall SEQTaRget HR**", hr=0.970,
-                        ci_lower=0.890, ci_upper=1.057,
-                        est_p="0.970 (0.890\u20131.057)"),
+pw2 <- rbind(data.table(label="**Overall SEQTaRget HR**", hr=0.959,
+                        ci_lower=0.881, ci_upper=1.044,
+                        est_p="0.959 (0.881\u20131.044)"),
              pw[, .SD, .SDcols=patterns("label|hr|ci_lower|ci_upper|est_p")])
 
 draw_forest(pw2,
@@ -386,15 +387,17 @@ draw_forest(pw2,
             xlim=c(0.65, 1.45))
 
 # =============================================================================
-# S1 — 次要结局森林图 (v28.4_secondary_m20b200.csv)
+# S1 — 次要结局森林图 (v28.4_secondary_m20.csv)
+# 注：硬编码 AKI/输血值待 step02 secondary m20 pool CSV 完成后同步更新
 # =============================================================================
 cat("\n===== S1: Secondary Outcomes Forest =====\n")
-sec <- fread(file.path(TABLES, "secondary/v28.4_secondary_m20b200.csv"))
+sec <- fread(file.path(TABLES, "secondary_multi/v28.4_secondary_m20.csv"))
 sec <- sec[metric %in% c("rr","or","rd")]  # 风险比/OR/RD
-# 构建行
+# TODO: 以下 AKI/输血硬编码值待 step02 完成后从 sec 自动映射
+# AKI ≥2、Incident AKI、PRBC 输血均在 v28.4_secondary_m20.csv 有 metric=rr 行
 s1 <- data.table(
   label = c("AKI \u22652 (including baseline)", "Incident AKI (baseline non-AKI)", "Transfusion"),
-  est   = c(0.986, 1.013, 1.263),
+  est   = c(0.986, 1.013, 1.263),  # OLD m10 placeholder → 等 step02 完成后自动替换
   lo    = c(0.946, 0.952, 1.133),
   hi    = c(1.030, 1.072, 1.391),
   unit  = "RR",
@@ -402,10 +405,10 @@ s1 <- data.table(
 )
 s1$est_p <- sprintf("%.3f (%.3f\u2013%.3f) [%s]", s1$est, s1$lo, s1$hi, s1$sig)
 
-# 加 90d
+# 加 90d（step11 death90 完成后更新）
 s1b <- data.table(label="90-day mortality (weighted Cox)", est=1.004, lo=0.924, hi=1.091,
                   unit="HR", sig="NS",
-                  est_p="1.004 (0.924\u20131.091) [NS]")
+                  est_p="1.004 (0.924\u20131.091) [NS]")  # OLD m10 placeholder
 s1_all <- rbind(s1b, s1)
 
 draw_forest(s1_all,
@@ -461,7 +464,7 @@ draw_forest(rbind(main_est[, .SD, .SDcols=patterns("label|hr|ci_lower|ci_upper|e
 # S6 — DAG14 Love Plot (按 v28.4 实库计算)
 # =============================================================================
 cat("\n===== S6: Love Plot =====")
-# DAG14 未加权 vs 加权 SMD（从 PC 权重摘要或 common.R 计算更准；
+# DAG14 未加权 vs 加权 SMD（从 PC 权重摘要或 v28.4_common.R 计算更准；
 # 此处用 v28.3 的 Love Plot 脚本口径更新数值）
 cov_love <- data.table(
   label=c("Age", "Baseline SOFA", "Sepsis-3", "Charlson", "eGFR",

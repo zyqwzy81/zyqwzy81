@@ -5,8 +5,8 @@
 #   (2) 回归标准化 g-computation：pooled logistic 离散风险模型预测"若全程
 #       随访到28天"的臂特异累计发病曲线（不依赖出院无信息删失）
 # 用法:
-#   验证:   Rscript fig2_estimands.R --imps 1 --nboot 0 --tag imp1
-#   全量:   Rscript fig2_estimands.R --imps 1..20 --nboot 200
+#   验证:   Rscript v28.4_fig2_estimands.R --imps 1 --nboot 0 --tag imp1
+#   全量:   Rscript v28.4_fig2_estimands.R --imps 1..20 --nboot 200
 # 须 LD_LIBRARY_PATH=/opt/miniforge3/lib   版本 V28.4  2026-10-10
 # ============================================================================
 suppressPackageStartupMessages({

@@ -12,12 +12,12 @@
 #   连续（2）：
 #     * 无呼吸机日 VFD-28   vfd_28                 (M0_07)
 #     * ICU 住院时长        icu_los                (M0_07, 自 t0 起)
-#   口径与 common.R 完全一致：每 stay 取首行；DAG14 估 PS
+#   口径与 v28.4_secondary_outcomes.R 完全一致：每 stay 取首行；DAG14 估 PS
 #   -> 稳定化 IPTW（1/99 截断）；m=20，B=200 MI-bootstrap
 #     （随机 imp × subject 重抽 × 重估 PS）。
 # 用法:
-#   验证: Rscript secondary_extra.R --imps 1 --nboot 0 --tag imp1
-#   全量: Rscript secondary_extra.R --imps 1..20 --nboot 200
+#   验证: Rscript v28.4_secondary_extra.R --imps 1 --nboot 0 --tag imp1
+#   全量: Rscript v28.4_secondary_extra.R --imps 1..20 --nboot 200
 # 须 LD_LIBRARY_PATH=/opt/miniforge3/lib   V28.4  2026-10-10
 # ============================================================================
 suppressPackageStartupMessages({library(data.table);library(arrow)})
@@ -165,7 +165,7 @@ if(NBOOT>0){
   fb<-build(ab); fc<-build(ac)
   cat("\n===== 二分类 Bootstrap 95% CI (B=",NBOOT,") =====\n",sep="");print(fb)
   cat("\n===== 连续 Bootstrap 95% CI (B=",NBOOT,") =====\n",sep="");print(fc)
-  fwrite(fb,file.path(OUT_T,paste0("extra_bin_",TAG,".csv")))
-  fwrite(fc,file.path(OUT_T,paste0("extra_cont_",TAG,".csv")))
+  fwrite(fb,file.path(OUT_T,paste0("v28.4_extra_bin_",TAG,".csv")))
+  fwrite(fc,file.path(OUT_T,paste0("v28.4_extra_cont_",TAG,".csv")))
 }
 cat("\ndone tag =",TAG,"\n")

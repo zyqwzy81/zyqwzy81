@@ -193,11 +193,11 @@ result <- data.table(
 )
 print(result, row.names=FALSE)
 
-fwrite(result, file.path(OUT, "ste_rmst_comparison.csv"), row.names=FALSE)
-fwrite(E_S_wide, file.path(OUT, "ste_rmst_survival_curve.csv"), row.names=FALSE)
-fwrite(data.table(bm[1:nb,]), file.path(OUT, "ste_rmst_boot.csv"), row.names=FALSE)
+fwrite(result, file.path(OUT, "v28.4_ste_rmst_comparison.csv"), row.names=FALSE)
+fwrite(E_S_wide, file.path(OUT, "v28.4_ste_rmst_survival_curve.csv"), row.names=FALSE)
+fwrite(data.table(bm[1:nb,]), file.path(OUT, "v28.4_ste_rmst_boot.csv"), row.names=FALSE)
 
-sink(file.path(OUT,"ste_rmst_model.txt"))
+sink(file.path(OUT,"v28.4_ste_rmst_model.txt"))
 cat("=== STE g-computation pooled logistic regression ===\n")
 cat(sprintf("Model formula: %s\n", deparse(fml)))
 print(summary(fit))
@@ -206,8 +206,8 @@ print(anova(fit, test="LRT"))
 sink()
 
 cat(sprintf("\n✓ 输出:\n  %s\n  %s\n  %s\n  %s\n",
-            file.path(OUT,"ste_rmst_comparison.csv"),
-            file.path(OUT,"ste_rmst_survival_curve.csv"),
-            file.path(OUT,"ste_rmst_boot.csv"),
-            file.path(OUT,"ste_rmst_model.txt")))
+            file.path(OUT,"v28.4_ste_rmst_comparison.csv"),
+            file.path(OUT,"v28.4_ste_rmst_survival_curve.csv"),
+            file.path(OUT,"v28.4_ste_rmst_boot.csv"),
+            file.path(OUT,"v28.4_ste_rmst_model.txt")))
 cat("\n===== 完成 =====\n")

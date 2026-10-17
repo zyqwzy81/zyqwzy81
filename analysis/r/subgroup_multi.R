@@ -1,5 +1,5 @@
 # ============================================================================
-# subgroup_multi.R
+# v28.4_subgroup_multi.R
 # 多次入组（multi-enrollment）框架下：9 个基线变量亚组 HR + 层间异质性检验
 #
 # 亚组通过包内置 SEQopts(subgroup=...) 在同一次 g-formula 展开中分层；
@@ -10,7 +10,7 @@
 # 开关同主脚本：--imps/--nboot/--bootimps/--firstonly/--tag
 # 版本 V28.4  日期 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/multi_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_multi_common.R")
 
 argv <- commandArgs(trailingOnly = TRUE)
 gv <- function(k, d) { i <- match(k, argv); if (is.na(i)) d else argv[i + 1] }
@@ -23,6 +23,9 @@ FIRST  <- "--firstonly" %in% argv
 
 OUT_T <- file.path(V28_BASE, "TTE/v28.4/output/tables/subgroup_multi")
 dir.create(OUT_T, recursive = TRUE, showWarnings = FALSE)
+
+suffix <- paste0(if (FIRST) "firstonly_" else "", TAG)
+PER_F <- file.path(OUT_T, paste0("v28.4_subgroup_", suffix, "_per_imp.csv"))
 
 cat("build event offsets once...\n")
 off <- build_event_offsets()
@@ -119,19 +122,52 @@ run_imp <- function(imp_id) {
   res
 }
 
-per_imp <- lapply(IMPS, run_imp)
+# ---- checkpoint ----
+done_imps <- if (file.exists(PER_F)) {
+  x <- fread(PER_F, colClasses = list(imp = "integer"))$imp
+  sort(unique(x))
+} else integer(0)
+todo <- setdiff(IMPS, done_imps)
+if (length(done_imps) > 0 && !setequal(done_imps, intersect(done_imps, IMPS))) {
+  cat(sprintf("[checkpoint] PER_F imps=%s ⊄ IMPS → reset\n",
+              paste(done_imps, collapse = ",")))
+  file.remove(PER_F); done_imps <- integer(0); todo <- IMPS
+}
+cat(sprintf("[checkpoint] todo=%s done=%s\n",
+            if (length(todo)) paste(todo, collapse = ",") else "(none)",
+            if (length(done_imps)) paste(done_imps, collapse = ",") else "(none)"))
 
-# ---- 逐亚组变量：Rubin 合并两层 + 异质性 ----
-m <- length(IMPS)
-pool_stratum <- function(vals) {
-  # vals: list per imp of c(loghr,se)
-  q <- vapply(vals, function(x) x["loghr"], numeric(1))
-  se_all <- vapply(vals, function(x) x["se"], numeric(1))
-  qbar <- mean(q); bv <- if (m > 1) var(q) else 0
+# ---- 跨 imp 执行（长表 per_imp：imp × variable × level）----
+res_l <- vector("list", length(todo))
+for (k in seq_along(todo)) {
+  im <- todo[k]
+  r <- run_imp(im)
+  per_rows <- rbindlist(lapply(SPEC, function(sp) {
+    g0 <- r[[sp$variable]]$g0; g1 <- r[[sp$variable]]$g1
+    rbind(
+      data.table(imp = im, variable = sp$variable, level = "g0",
+                 loghr = g0["loghr"], se = g0["se"]),
+      data.table(imp = im, variable = sp$variable, level = "g1",
+                 loghr = g1["loghr"], se = g1["se"])
+    )
+  }))
+  fwrite(per_rows, PER_F, append = file.exists(PER_F))
+  res_l[[k]] <- r
+  rm(r, per_rows); invisible(gc())
+}
+
+# ---- Rubin 合并（从 PER_F 读全量）----
+per_dt <- fread(PER_F, colClasses = list(imp = "integer"))
+stopifnot(setequal(sort(unique(per_dt$imp)), IMPS))
+
+pool_stratum <- function(v, lv) {
+  sub <- per_dt[variable == v & level == lv]
+  q <- sub$loghr; se_all <- sub$se
+  qbar <- mean(q); bv <- if (length(q) > 1) var(q) else 0
   sev <- se_all[is.finite(se_all)]
   if (length(sev)) {
-    ubar <- mean(sev^2); tv <- ubar + (1 + 1 / m) * bv
-    dfm <- if (bv > 0) (m - 1) * (1 + ubar / ((1 + 1 / m) * bv))^2 else Inf
+    ubar <- mean(sev^2); tv <- ubar + (1 + 1 / length(q)) * bv
+    dfm <- if (bv > 0) (length(q) - 1) * (1 + ubar / ((1 + 1 / length(q)) * bv))^2 else Inf
   } else { tv <- NA_real_; dfm <- Inf }
   zt <- if (is.finite(dfm)) qt(.975, dfm) else qnorm(.975)
   list(loghr = qbar, se = if (is.finite(tv)) sqrt(tv) else NA_real_,
@@ -142,10 +178,8 @@ pool_stratum <- function(vals) {
 
 out <- rbindlist(lapply(SPEC, function(sp) {
   v <- sp$variable
-  p0 <- pool_stratum(lapply(per_imp, function(x) x[[v]]$g0))
-  p1 <- pool_stratum(lapply(per_imp, function(x) x[[v]]$g1))
-  # 异质性检验：delta 的 Rubin 总 SE（两层 TV 之和），参考分布用
-  # Barnard-Rubin t（自由度取两层较小值，Welch 型保守近似；与主分析同口径）
+  p0 <- pool_stratum(v, "g0")
+  p1 <- pool_stratum(v, "g1")
   p_het <- NA_real_
   if (is.finite(p0$se) && is.finite(p1$se)) {
     delta <- p1$loghr - p0$loghr
@@ -166,6 +200,7 @@ out <- rbindlist(lapply(SPEC, function(sp) {
 
 cat("\n========== SUBGROUP multi-enrollment ==========\n")
 print(out)
-suffix <- paste0(if (FIRST) "firstonly_" else "", TAG)
-fwrite(out, file.path(OUT_T, paste0("subgroup_", suffix, ".csv")))
-cat("saved:", file.path(OUT_T, paste0("subgroup_", suffix, ".csv")), "\n")
+POOL_F <- file.path(OUT_T, paste0("v28.4_subgroup_", suffix, ".csv"))
+fwrite(out, POOL_F)
+cat("saved:", POOL_F, "\n")
+cat("per_imp already appended into:", PER_F, "\n")

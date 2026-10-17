@@ -1,5 +1,5 @@
 # ============================================================================
-# death90_chunk.R
+# v28.4_death90_chunk.R
 # 多次入组框架下 90 天全因死亡 g-formula HR —— 低内存"分块展开→合并→一次分析"
 #
 # 方法严格性（28 天实证，见会话记录）：
@@ -11,7 +11,7 @@
 # 开关：--imps / --chunksize / --tag
 # 版本 V28.4  日期 2026-10-11
 # ============================================================================
-suppressMessages(source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/multi_common.R"))
+suppressMessages(source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_multi_common.R"))
 ns <- asNamespace("SEQTaRget")
 internal.analysis <- ns$internal.analysis
 internal.hazard   <- ns$internal.hazard
@@ -149,7 +149,7 @@ run_imp <- function(imp_id) {
 }
 
 res <- rbindlist(lapply(IMPS, run_imp))
-out_f <- file.path(OUT_T, sprintf("death90_%s.csv", TAG))
+out_f <- file.path(OUT_T, sprintf("v28.4_death90_%s.csv", TAG))
 fwrite(res, out_f)
 
 cat("\n================ 结果 ================\n")

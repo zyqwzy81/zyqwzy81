@@ -8,8 +8,8 @@
 #     加权累计风险，日28 自然落在 stay 层真实死亡水平（~16%）
 #   * B=200 MI-bootstrap（subject 重抽 × 区间重落点 × 重估 PS）
 # 用法:
-#   验证: Rscript fig2_fullkm.R --imps 1 --nboot 0 --tag imp1
-#   全量: Rscript fig2_fullkm.R --imps 1..20 --nboot 200
+#   验证: Rscript v28.4_fig2_fullkm.R --imps 1 --nboot 0 --tag imp1
+#   全量: Rscript v28.4_fig2_fullkm.R --imps 1..20 --nboot 200
 # 须 LD_LIBRARY_PATH=/opt/miniforge3/lib   V28.4  2026-10-10
 # ============================================================================
 suppressPackageStartupMessages({

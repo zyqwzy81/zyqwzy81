@@ -12,8 +12,8 @@
 #        加权组间风险 / RD / RR / OR + 加权 Cox 总体 HR（cluster=subject）
 #        m=20 点估计 Rubin 合并；B=200 MI-bootstrap（subject 重抽 × 重估 PS）
 # 用法:
-#   验证: Rscript death90.R --imps 1 --nboot 0 --tag imp1
-#   全量: Rscript death90.R --imps 1..20 --nboot 200
+#   验证: Rscript v28.4_death90.R --imps 1 --nboot 0 --tag imp1
+#   全量: Rscript v28.4_death90.R --imps 1..20 --nboot 200
 # 须 LD_LIBRARY_PATH=/opt/miniforge3/lib   V28.4  2026-10-10
 # ============================================================================
 suppressPackageStartupMessages({
@@ -130,13 +130,13 @@ if(NBOOT>0){
                        ci_lower=exp(ci[1,"beta"]),ci_upper=exp(ci[2,"beta"]))
   cat("\n===== Bootstrap 95% CI 风险指标 =====\n"); print(risk_final)
   cat("\n===== Bootstrap 95% CI 90d HR =====\n"); print(hr_final)
-  fwrite(risk_final,file.path(OUT_T,paste0("death90_risk_",TAG,".csv")))
-  fwrite(hr_final,file.path(OUT_T,paste0("death90_hr_",TAG,".csv")))
-  fwrite(as.data.table(Bm),file.path(OUT_T,paste0("death90_bootraw_",TAG,".csv")))
+  fwrite(risk_final,file.path(OUT_T,paste0("v28.4_death90_risk_",TAG,".csv")))
+  fwrite(hr_final,file.path(OUT_T,paste0("v28.4_death90_hr_",TAG,".csv")))
+  fwrite(as.data.table(Bm),file.path(OUT_T,paste0("v28.4_death90_bootraw_",TAG,".csv")))
 }else{
   fwrite(data.table(metric=names(pt_risk),est=pt_risk),
-         file.path(OUT_T,paste0("death90_risk_",TAG,".csv")))
+         file.path(OUT_T,paste0("v28.4_death90_risk_",TAG,".csv")))
   fwrite(data.table(analysis="90-day death",t(hr_pt)),
-         file.path(OUT_T,paste0("death90_hr_",TAG,".csv")))
+         file.path(OUT_T,paste0("v28.4_death90_hr_",TAG,".csv")))
 }
 cat("\ndone tag =",TAG,"\n")

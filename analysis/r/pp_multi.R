@@ -1,5 +1,5 @@
 # ============================================================================
-# pp_multi.R
+# v28.4_pp_multi.R
 # 多次入组（multi-enrollment）框架下：Per-Protocol（PP）g-formula HR
 #
 # 机制（包 SEQexpand method="censoring"）：
@@ -12,7 +12,7 @@
 # 开关：--imps/--nboot/--bootimps/--firstonly/--tag
 # 版本 V28.4  日期 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/multi_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_multi_common.R")
 
 argv <- commandArgs(trailingOnly = TRUE)
 gv <- function(k, d) { i <- match(k, argv); if (is.na(i)) d else argv[i + 1] }
@@ -25,6 +25,9 @@ FIRST  <- "--firstonly" %in% argv
 
 OUT_T <- file.path(V28_BASE, "TTE/v28.4/output/tables/pp_multi")
 dir.create(OUT_T, recursive = TRUE, showWarnings = FALSE)
+
+suffix <- paste0(if (FIRST) "firstonly_" else "", TAG)
+PER_F <- file.path(OUT_T, paste0("v28.4_pp_", suffix, "_per_imp.csv"))
 
 AUG_F <- file.path(V28_BASE, "TTE/v26/output/sequential_trials_augmented.parquet")
 
@@ -83,10 +86,37 @@ run_imp <- function(imp_id) {
   list(loghr = loghr, se = se)
 }
 
-per_imp <- lapply(IMPS, run_imp)
+# ---- checkpoint ----
+done_imps <- if (file.exists(PER_F)) {
+  x <- fread(PER_F, colClasses = list(imp = "integer"))$imp
+  sort(unique(x))
+} else integer(0)
+todo <- setdiff(IMPS, done_imps)
+if (length(done_imps) > 0 && !setequal(done_imps, intersect(done_imps, IMPS))) {
+  cat(sprintf("[checkpoint] PER_F imps=%s ⊄ IMPS → reset\n",
+              paste(done_imps, collapse = ",")))
+  file.remove(PER_F); done_imps <- integer(0); todo <- IMPS
+}
+cat(sprintf("[checkpoint] todo=%s done=%s\n",
+            if (length(todo)) paste(todo, collapse = ",") else "(none)",
+            if (length(done_imps)) paste(done_imps, collapse = ",") else "(none)"))
 
-g <- function(k) vapply(per_imp, function(r) r[[k]], numeric(1))
-q <- g("loghr"); within <- g("se"); m <- length(q)
+# ---- 跨 imp 执行 ----
+res_l <- vector("list", length(todo))
+for (k in seq_along(todo)) {
+  im <- todo[k]
+  r <- run_imp(im)
+  per_row <- data.table(imp = im, loghr = r$loghr, se = r$se)
+  fwrite(per_row, PER_F, append = file.exists(PER_F))
+  res_l[[k]] <- r
+  rm(r, per_row); invisible(gc())
+}
+
+# ---- Rubin 合并（从 PER_F 读全量）----
+per_dt <- fread(PER_F, colClasses = list(imp = "integer"))
+stopifnot(setequal(sort(per_dt$imp), IMPS))
+
+q <- per_dt$loghr; within <- per_dt$se; m <- length(q)
 qbar <- mean(q); bv <- if (m > 1) var(q) else 0
 se_v <- within[is.finite(within)]; has_se <- length(se_v) > 0
 if (has_se) {
@@ -104,6 +134,7 @@ res <- data.table(analysis = "Per-protocol (censoring IPCW, multi-enrollment)",
                   HR_uci = if (has_se) exp(qbar + zt * sqrt(tv)) else NA_real_,
                   p = pval, n_imp = m, first_only = FIRST, n_boot = NBOOT)
 cat("\n========== PP multi-enrollment ==========\n"); print(res)
-suffix <- paste0(if (FIRST) "firstonly_" else "", TAG)
-fwrite(res, file.path(OUT_T, paste0("pp_", suffix, ".csv")))
-cat("saved:", file.path(OUT_T, paste0("pp_", suffix, ".csv")), "\n")
+POOL_F <- file.path(OUT_T, paste0("v28.4_pp_", suffix, ".csv"))
+fwrite(res, POOL_F)
+cat("saved:", POOL_F, "\n")
+cat("per_imp already appended into:", PER_F, "\n")

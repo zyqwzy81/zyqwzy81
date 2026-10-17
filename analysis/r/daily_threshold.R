@@ -1,10 +1,10 @@
 # ============================================================================
-# daily_threshold.R
+# v28.4_daily_threshold.R
 # stay 唯一队列：逐日 HR (Day1-14，正确条件风险集) + 血磷阈值剂量反应 (6 切点)
 # 稳定化 IPTW + coxph 稳健 SE + Rubin m=20（探索性，无 bootstrap）
 # 版本: V28.4  日期: 2026-10-10
 # ============================================================================
-source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/stay_common.R")
+source("/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r/v28.4_stay_common.R")
 OUTDIR <- file.path(V28_BASE, "TTE/v28.4/output/tables/nonprimary_redo")
 dir.create(OUTDIR, recursive = TRUE, showWarnings = FALSE)
 
@@ -103,7 +103,7 @@ res_thr <- rbindlist(lapply(cutoffs, function(cut) {
              significant = ifelse(rp$p < 0.05, "p<0.05", "NS"))
 }))
 
-fwrite(res_daily, file.path(OUTDIR, "daily_hr.csv"))
-fwrite(res_thr,   file.path(OUTDIR, "threshold.csv"))
+fwrite(res_daily, file.path(OUTDIR, "v28.4_daily_hr.csv"))
+fwrite(res_thr,   file.path(OUTDIR, "v28.4_threshold.csv"))
 cat("\n=== Daily HR ===\n"); print(res_daily)
 cat("\n=== Threshold ===\n"); print(res_thr)

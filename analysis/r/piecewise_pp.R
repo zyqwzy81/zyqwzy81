@@ -18,8 +18,8 @@
 #      重估 PS 与删失权重），bootstrap 百分位 CI
 #
 # 用法:
-#   验证: Rscript piecewise_pp.R --imps 1 --nboot 0 --tag imp1
-#   全量: Rscript piecewise_pp.R --imps 1..20 --nboot 200
+#   验证: Rscript v28.4_piecewise_pp.R --imps 1 --nboot 0 --tag imp1
+#   全量: Rscript v28.4_piecewise_pp.R --imps 1..20 --nboot 200
 # 须 LD_LIBRARY_PATH=/opt/miniforge3/lib   V28.4  2026-10-10
 # ============================================================================
 suppressPackageStartupMessages({
@@ -247,12 +247,12 @@ if(NBOOT>0){
   }))
   cat("\n===== PP 总体 Bootstrap 95% CI =====\n"); print(pp_final)
   cat("\n===== 分段 HR Bootstrap 95% CI =====\n"); print(seg_final)
-  fwrite(pp_final,file.path(OUT_T,paste0("pp_",TAG,".csv")))
-  fwrite(seg_final,file.path(OUT_T,paste0("piecewise_",TAG,".csv")))
-  fwrite(as.data.table(Bm),file.path(OUT_T,paste0("piecewise_pp_bootraw_",TAG,".csv")))
+  fwrite(pp_final,file.path(OUT_T,paste0("v28.4_pp_",TAG,".csv")))
+  fwrite(seg_final,file.path(OUT_T,paste0("v28.4_piecewise_",TAG,".csv")))
+  fwrite(as.data.table(Bm),file.path(OUT_T,paste0("v28.4_piecewise_pp_bootraw_",TAG,".csv")))
 }else{
   fwrite(data.table(analysis="Per-protocol",t(pp_pt)),
-         file.path(OUT_T,paste0("pp_",TAG,".csv")))
-  fwrite(pw_dt,file.path(OUT_T,paste0("piecewise_",TAG,".csv")))
+         file.path(OUT_T,paste0("v28.4_pp_",TAG,".csv")))
+  fwrite(pw_dt,file.path(OUT_T,paste0("v28.4_piecewise_",TAG,".csv")))
 }
 cat("\ndone tag =",TAG,"\n")

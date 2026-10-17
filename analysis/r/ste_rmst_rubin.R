@@ -112,8 +112,8 @@ out <- data.table(analysis="STE_gcomp_RMST_Rubin_pooled", tau=TAU, m=10,
                   diff=qbar, ci_lower=ci[1], ci_upper=ci[2], p_value=pval,
                   between_var=bv, within_var=ubar, total_var=tv,
                   se_within=sqrt(ubar), n_boot=B)
-fwrite(out, file.path(OUT, "ste_gcomp_rmst_rubin_pooled.csv"), row.names=FALSE)
-fwrite(rbindlist(all_imps), file.path(OUT, "ste_gcomp_rmst_per_imputation.csv"), row.names=FALSE)
+fwrite(out, file.path(OUT, "v28.4_ste_gcomp_rmst_rubin_pooled.csv"), row.names=FALSE)
+fwrite(rbindlist(all_imps), file.path(OUT, "v28.4_ste_gcomp_rmst_per_imputation.csv"), row.names=FALSE)
 cat(sprintf("\n✓ %s\n  %s\n",
-            file.path(OUT,"ste_gcomp_rmst_rubin_pooled.csv"),
-            file.path(OUT,"ste_gcomp_rmst_per_imputation.csv")))
+            file.path(OUT,"v28.4_ste_gcomp_rmst_rubin_pooled.csv"),
+            file.path(OUT,"v28.4_ste_gcomp_rmst_per_imputation.csv")))

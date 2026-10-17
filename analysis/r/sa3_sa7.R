@@ -1,17 +1,17 @@
 #!/usr/bin/env Rscript
 # ============================================================================
-# sa3_sa7.R
+# v28.4_sa3_sa7.R
 # SA3: DAG13（剔除 sepsis3），m=20 Rubin，SEQTaRget hazard，与主分析同口径
 # SA7: 完整病例（原始未插补 DAG14 齐全者），无 MI，SEQTaRget hazard + bootstrap
 #
 # 用法：
-#   Rscript sa3_sa7.R --which dag13 --imps 1,...,20 --nboot 200
-#   Rscript sa3_sa7.R --which cca   --nboot 200
-#   Rscript sa3_sa7.R --which both  ...
+#   Rscript v28.4_sa3_sa7.R --which dag13 --imps 1,...,20 --nboot 200
+#   Rscript v28.4_sa3_sa7.R --which cca   --nboot 200
+#   Rscript v28.4_sa3_sa7.R --which both  ...
 # 版本 V28.4  日期 2026-10-10
 # ============================================================================
 CODE_DIR <- "/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r"
-source(file.path(CODE_DIR, "common.R"))
+source(file.path(CODE_DIR, "v28.4_common.R"))
 suppressPackageStartupMessages(library(SEQTaRget))
 
 parse_args <- function(argv) {
@@ -65,23 +65,43 @@ run_seq <- function(trials, covset, label) {
 OUT_DIR <- file.path(V28_BASE,
                      "TTE/v28.4/output/tables/nonprimary_redo")
 dir.create(OUT_DIR, recursive = TRUE, showWarnings = FALSE)
+SA3_PER_F <- file.path(OUT_DIR, "v28.4_sa3_dag13_per_imp.csv")
 
 # ---- SA3 ----
 if (ARGS$which %in% c("dag13", "both")) {
   DAG13 <- setdiff(DAG14, "sepsis3")
-  per <- lapply(ARGS$imps, function(im) {
-    cat("\n==== SA3 imp", im, "====\n")
-    run_seq(load_trials(im), DAG13, paste0("dag13_imp", im))
-  })
-  loghr <- vapply(per, function(x) x$loghr, numeric(1))
-  sev   <- vapply(per, function(x) x$se, numeric(1))
-  pooled <- rubin_pool(loghr, sev, m = length(ARGS$imps))
+  IMPS <- ARGS$imps
+  done_imps <- if (file.exists(SA3_PER_F)) {
+    x <- fread(SA3_PER_F, colClasses = list(imp = "integer"))$imp
+    sort(unique(x))
+  } else integer(0)
+  todo <- setdiff(IMPS, done_imps)
+  if (length(done_imps) > 0 && !setequal(done_imps, intersect(done_imps, IMPS))) {
+    cat(sprintf("[checkpoint] SA3 PER_F imps=%s ⊄ IMPS → reset\n",
+                paste(done_imps, collapse = ",")))
+    file.remove(SA3_PER_F); done_imps <- integer(0); todo <- IMPS
+  }
+  cat(sprintf("[SA3 checkpoint] todo=%s done=%s\n",
+              if (length(todo)) paste(todo, collapse = ",") else "(none)",
+              if (length(done_imps)) paste(done_imps, collapse = ",") else "(none)"))
+  for (im in todo) {
+    cat(sprintf("\n==== SA3 imp %d ====\n", im))
+    r <- run_seq(load_trials(im), DAG13, paste0("dag13_imp", im))
+    per_row <- data.table(imp = im, loghr = r$loghr, se = r$se,
+                          hr = r$hr, lci = r$lci, uci = r$uci)
+    fwrite(per_row, SA3_PER_F, append = file.exists(SA3_PER_F))
+    rm(r, per_row); invisible(gc())
+  }
+  per_dt <- fread(SA3_PER_F, colClasses = list(imp = "integer"))
+  stopifnot(setequal(sort(per_dt$imp), IMPS))
+  loghr <- per_dt$loghr; sev <- per_dt$se
+  pooled <- rubin_pool(loghr, sev, m = length(IMPS))
   cat(sprintf("\nSA3 DAG13 HR = %.3f (%.3f-%.3f), p=%.4f\n",
               pooled$hr, pooled$lci, pooled$uci, pooled$p))
-  data.table(analysis = "SA3 DAG13", m = length(ARGS$imps),
+  data.table(analysis = "SA3 DAG13", m = length(IMPS),
              n_boot = ARGS$nboot, hr = pooled$hr, lci = pooled$lci,
              uci = pooled$uci, p = pooled$p) |>
-    fwrite(file.path(OUT_DIR, "sa3_dag13.csv"))
+    fwrite(file.path(OUT_DIR, "v28.4_sa3_dag13.csv"))
 }
 
 # ---- SA7 ----
@@ -95,6 +115,6 @@ if (ARGS$which %in% c("cca", "both")) {
              n_event = sum(comp$death_28day_num), n_boot = ARGS$nboot,
              hr = r$hr, lci = r$lci, uci = r$uci,
              p = 2 * pnorm(-abs(r$loghr / r$se))) |>
-    fwrite(file.path(OUT_DIR, "sa7_cca.csv"))
+    fwrite(file.path(OUT_DIR, "v28.4_sa7_cca.csv"))
   cat(sprintf("SA7 CCA HR = %.3f (%.3f-%.3f)\n", r$hr, r$lci, r$uci))
 }

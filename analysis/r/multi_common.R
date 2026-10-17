@@ -1,8 +1,8 @@
 # ============================================================================
-# multi_common.R
+# v28.4_multi_common.R
 # 多次入组（multi-enrollment）序贯目标试验公共库
 #
-# 思路：在 common.R 的"stay 单条连续自然日时间线"几何上，
+# 思路：在 v28.4_common.R 的"stay 单条连续自然日时间线"几何上，
 #       把每个二分类结局的【绝对事件日】铺到同一条时间线（每结局一列），
 #       包在 SEQuential() 内做 expand + 窗口化，自动把事件归因到
 #       各试验起点的克隆。因此同一份宽日级表可驱动全部 28 天结局，
@@ -23,7 +23,7 @@
 # ============================================================================
 
 CODE_DIR <- "/data/小米云盘/文档/论文/血磷/TTE/v28.4/code/r"
-source(file.path(CODE_DIR, "common.R"))
+source(file.path(CODE_DIR, "v28.4_common.R"))
 suppressPackageStartupMessages(library(SEQTaRget))
 
 V28_BASE <- "/data/小米云盘/文档/论文/血磷"

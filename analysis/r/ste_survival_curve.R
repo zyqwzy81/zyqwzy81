@@ -1,7 +1,7 @@
 #!/usr/bin/env Rscript
 # =============================================================================
 # STE g-computation survival curve with bootstrap CI band
-#   * 读取 common.R 已经拟合的模型
+#   * 读取 v28.4_ste_rmst_gcomp.R 已经拟合的模型
 #   * 提取每天 E[S(t|do(A=0))] / E[S(t|do(A=1))]
 #   * Bootstrap 200 次得到每天 CI band
 #   * ggplot2 geom_step + geom_ribbon 绘制

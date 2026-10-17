@@ -1,5 +1,5 @@
 # ============================================================================
-# common.R
+# v28.4_common.R
 # 主分析公共模块：把"试验行 + MICE 插补"构建成 SEQTaRget 所需的
 # 日级 person-period 表（每个 stay 一条连续日历时间线，自然日锚定）。
 #
@@ -7,7 +7,9 @@
 #   * ID = stay_id；时间轴按"自然日历日期"锚定，day0 = 该 stay 最早起点日期
 #   * eligible=1 落在每个试验起点所在自然日（起点不冲突）
 #   * tx_init 在起点日按 itt_group 定臂（0/1），纯 ITT 随访（不删失、不切换）
-#   * outcome 仅在死亡日落 1；死亡日用 stay 层共识（origin_day+round(surv_time) 众数）
+#   * outcome 仅在死亡日落 1；死亡日用 stay 层共识（v28.4.1 起为绝对日历日
+#     as.Date(time_zero+surv_time) 众数；旧 origin_day+round(surv_time) 规则
+#     对 admissions.deathtime 精确恢复率仅 67.1%，新规则 99.3%）
 #   * 网格延伸到 max(origin)+28，出院不删失（B 口径）
 #   * DAG14 全部作为"起点基线"写入起点日并前向填充（包内 *_bas 机制）
 # 版本: V28.4   日期: 2026-10-09
@@ -82,11 +84,18 @@ load_trials <- function(imp_id) {
 
 # ---- 2. stay 层共识死亡日 ----
 # 返回 data.table: stay_id, death_day（幸存者无此行）
+# v28.4.1 修正（2026-10-14）：按"绝对日历日"定位死亡——
+# 每个起点重建 deathtime 日历日 as.Date(time_zero + surv_time*86400)（UTC），
+# stay 内取众数后相对该 stay 最早入组日历日编号。
+# 旧规则 origin_day + round(surv_time) 逐起点四舍五入再取众数，因起点时刻
+# 非整点产生合成舍入误差；以 admissions.deathtime 日历日验证：旧规则精确
+# 恢复 67.1%，新规则 99.3%（N=2,569 院内死亡 stay）。
 stay_death_day <- function(trials) {
-  dth <- trials[death_28day_num == 1L,
-                .(cand = pmin(TAU, pmax(0L,
-                    origin_day + as.integer(round(surv_time))))),
-                by = stay_id]
+  origin0 <- trials[, .(origin0 = min(as.integer(as.Date(time_zero)))), by = stay_id]
+  dth <- trials[death_28day_num == 1L]
+  dth[, cand_date := as.integer(as.Date(time_zero + surv_time * 86400))]
+  dth <- merge(dth, origin0, by = "stay_id")
+  dth <- dth[, .(cand = pmin(TAU, pmax(0L, cand_date - origin0))), by = stay_id]
   dth[, .(death_day = mode1(cand)), by = stay_id]
 }
 
@@ -216,4 +225,118 @@ rubin_pool <- function(loghr, se, m = length(loghr)) {
        p = 2 * (if (is.finite(dfm)) pt(-abs(qbar / sqrt(tv)), dfm)
                 else pnorm(-abs(qbar / sqrt(tv)))),
        T = tv, B = bv, df = dfm)
+}
+
+# ---- 7. 分批并行 Bootstrap：单次插补数据集 ----
+# 原理（实验已验证，imp01 B=20 vs 4×B=5，SE 差异 1.3%）：
+#   * 点估计 HR：1 次 SEQuential(bootstrap=FALSE) —— 模型拟合结果
+#   * SE/CI：n_batch 批 × B_per_batch 次 SEQuential(bootstrap=TRUE)
+#            seed 递增偏移保证各批 bootstrap 重采样不重叠
+#            SE_combined = sqrt(mean(SE_batch²))  （方差平均）
+#            CI = exp(logHR ± 1.96 × SE_combined)
+#   * 并行：parallel::mclapply(..., mc.cores=ncores)
+#
+# 参数:
+#   daily       由 build_daily_input(trials) 产生的 daily-long 表
+#   DAG14       协变量向量
+#   n_boot      目标总 bootstrap 次数（如 200）
+#   batch_size  每批 bootstrap 次数（如 50），总批数 = n_boot / batch_size
+#   base_seed   基础种子，各批 seed = base_seed + (k-1) * batch_size
+#   ncores      并行核数；=1 时串行，>1 时 mclapply
+#   verbose     是否打印每批进度
+#
+# 返回: list(loghr, se, hr, lci, uci, info)
+#   info 含各批详情，便于诊断
+run_one_imp_batch_bootstrap <- function(
+    daily, DAG14 = DAG14,
+    n_boot = 200L, batch_size = 50L,
+    base_seed = SEED, ncores = 4L, verbose = TRUE) {
+
+  stopifnot(n_boot %% batch_size == 0L)
+  n_batch <- as.integer(n_boot / batch_size)
+
+  if (verbose) cat(sprintf("[batch-boot] n_boot=%d, batch_size=%d, n_batch=%d, ncores=%d\n",
+                           n_boot, batch_size, n_batch, ncores))
+
+  # --- Step 1: 点估计 HR（bootstrap=FALSE）---
+  if (verbose) cat("[batch-boot] Step 1: point estimate (bootstrap=FALSE)...\n")
+  t0 <- Sys.time()
+  opts_pt <- SEQopts(hazard = TRUE, km.curves = FALSE, bootstrap = FALSE,
+                     bootstrap.sample = 1, followup.max = TAU,
+                     seed = base_seed, bootstrap.CI_method = "se")
+  model_pt <- SEQuential(
+    daily, id.col = "stay_id", time.col = "day",
+    eligible.col = "eligible", treatment.col = "tx_init",
+    outcome.col = "outcome",
+    time_varying.cols = DAG14, fixed.cols = list(),
+    method = "ITT", options = opts_pt, verbose = FALSE)
+  h0_pt <- hazard_ratio(model_pt)
+  pt_info <- extract_log(h0_pt)
+  t1 <- Sys.time()
+  if (verbose) cat(sprintf("  point HR=%.4f, 耗时 %.1fs\n", pt_info$hr,
+                           as.numeric(difftime(t1, t0, units = "secs"))))
+
+  # --- Step 2: 分批 bootstrap ---
+  if (verbose) cat(sprintf("[batch-boot] Step 2: %d × B=%d bootstrap (并行 ncores=%d)...\n",
+                           n_batch, batch_size, ncores))
+
+  # 每批独立函数（mclapply 内部不能访问外部变量）
+  run_one_batch <- function(b_idx) {
+    batch_seed <- base_seed + (b_idx - 1L) * batch_size
+    opts_b <- SEQopts(hazard = TRUE, km.curves = FALSE, bootstrap = TRUE,
+                      bootstrap.nboot = batch_size, bootstrap.sample = 1,
+                      followup.max = TAU, seed = batch_seed,
+                      bootstrap.CI_method = "se")
+    m <- SEQuential(
+      daily, id.col = "stay_id", time.col = "day",
+      eligible.col = "eligible", treatment.col = "tx_init",
+      outcome.col = "outcome",
+      time_varying.cols = DAG14, fixed.cols = list(),
+      method = "ITT", options = opts_b, verbose = FALSE)
+    h <- hazard_ratio(m)
+    ci <- extract_log(h)
+    ci$batch_idx <- b_idx
+    ci$batch_seed <- batch_seed
+    ci$batch_B <- batch_size
+    ci
+  }
+
+  t0 <- Sys.time()
+  batch_res <- parallel::mclapply(seq_len(n_batch), run_one_batch,
+                                   mc.cores = as.integer(ncores))
+  t1 <- Sys.time()
+  if (verbose) cat(sprintf("  %d 批 bootstrap 完成, 耗时 %.1fs\n", n_batch,
+                           as.numeric(difftime(t1, t0, units = "secs"))))
+
+  # --- Step 3: 合并 SE ---
+  ses <- vapply(batch_res, function(x) x$se, numeric(1))
+  hrs <- vapply(batch_res, function(x) x$hr, numeric(1))
+  se_combined <- sqrt(mean(ses^2))   # 方差平均 → 合并 SE
+  # 各批 HR 均值（诊断用，不作为最终点估计）
+  hr_batch_mean <- mean(hrs)
+
+  # --- Step 4: 用点估计 HR + 合并 SE 重建 CI ---
+  z <- qnorm(0.975)
+  loghr_final <- pt_info$loghr
+  se_final <- se_combined
+  hr_final <- pt_info$hr
+  lci_final <- exp(loghr_final - z * se_final)
+  uci_final <- exp(loghr_final + z * se_final)
+
+  if (verbose) {
+    cat(sprintf("[batch-boot] batches: seed=%s, SE=%s, HR=%s\n",
+                paste(vapply(batch_res, function(x) x$batch_seed, integer(1)), collapse = ","),
+                paste(round(ses, 4), collapse = ","),
+                paste(round(hrs, 4), collapse = ",")))
+    cat(sprintf("[batch-boot] final: HR=%.4f, SE_combined=%.4f (from point), batch_HR_mean=%.4f\n",
+                hr_final, se_final, hr_batch_mean))
+  }
+
+  list(loghr = loghr_final, se = se_final,
+       hr = hr_final, lci = lci_final, uci = uci_final,
+       info = list(n_boot = n_boot, batch_size = batch_size,
+                   n_batch = n_batch, ncores = ncores,
+                   batch_seeds = vapply(batch_res, function(x) x$batch_seed, integer(1)),
+                   batch_SEs = ses, batch_HRs = hrs,
+                   batch_HR_mean = hr_batch_mean))
 }
