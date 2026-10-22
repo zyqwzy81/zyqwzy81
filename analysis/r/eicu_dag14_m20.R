@@ -1,7 +1,7 @@
 # ============================================================================
-# v28.4_eicu_dag14_m20.R — eICU 外部验证：MICE m=20 + SEQTaRget B=50 + Rubin
+# v28.4_eicu_dag14_m20.R — eICU 外部验证：MICE m=20 + SEQTaRget B=200 + Rubin
 # 输入: sql/result/eicu_dag14_full_stay.parquet (自包含 SQL 提取, ICU入院24h窗口)
-# 输出: eicu_seqtarget_dag14_m20_b50_rubin.csv + 20 个 imp 中间 CSV
+# 输出: eicu_seqtarget_dag14_m20_b200_rubin.csv + 20 个 imp 中间 CSV
 # 时间轴: 自然日历 day 0..28, stay 连续网格, 起点日 eligible=1 + tx_init=arm
 # ============================================================================
 suppressPackageStartupMessages({library(data.table);library(arrow);library(SEQTaRget);library(mice);library(EValue)})
@@ -9,7 +9,7 @@ BASE   <- "/data/小米云盘/文档/论文/血磷"
 OUTDIR <- file.path(BASE, "TTE/v28.4/output/tables/eicu_seqtarget")
 IMPDIR <- file.path(BASE, "TTE/v28.4/output/tables/eicu_seqtarget/imps")
 for (d in c(OUTDIR, IMPDIR)) dir.create(d, showWarnings=FALSE, recursive=TRUE)
-TAU   <- 28L; SEED <- 20260629L; BOOT <- 50L; M <- 20L
+TAU   <- 28L; SEED <- 20260629L; BOOT <- 200L; M <- 20L
 DAG14 <- c("age","gender","admission_type","baseline_phosphate","baseline_sofa",
            "charlson","vasoactive_at_t0","invasive_vent_at_t0","sepsis3",
            "lactate_t0","refeeding_risk","corrected_calcium","nutrition_support_type")
@@ -110,8 +110,8 @@ cat(sprintf("  MICE done %.1f min\n", as.numeric(difftime(Sys.time(),t0,units="m
 for (i in seq_len(M)) write_parquet(complete(mm, i), file.path(IMPDIR, sprintf("imp%02d.parquet",i)))
 cat(sprintf("  saved %d imp parquets → %s\n", M, IMPDIR))
 
-# ---- 4. 20 imp × SEQTaRget B=50 (分批 + 每 imp 单独 CSV + GC) ----
-cat("\n=== Step 4: 20 imp × SEQTaRget B=50 ===\n")
+# ---- 4. 20 imp × SEQTaRget B=200 (分批 + 每 imp 单独 CSV + GC) ----
+cat("\n=== Step 4: 20 imp × SEQTaRget B=200 ===\n")
 extract_log <- function(h0) {
   z<-qnorm(0.975); hr<-as.numeric(h0["Hazard ratio"])
   list(hr=hr, loghr=log(hr), se=(log(as.numeric(h0["UCI"]))-log(as.numeric(h0["LCI"])))/(2*z))

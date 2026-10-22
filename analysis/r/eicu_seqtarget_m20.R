@@ -1,12 +1,12 @@
 # ============================================================================
 # v28.4_eicu_seqtarget_m20.R
-# eICU-CRD v2.0 DAG14 外部验证 —— MICE m=20 + SEQTaRget B=50 + Rubin 合并
+# eICU-CRD v2.0 DAG14 外部验证 —— MICE m=20 + SEQTaRget B=200 + Rubin 合并
 #
 # 与 MIMIC v28.4 主分析对齐的口径：
 #   * MICE m=20 (MIMIC 亦为 m=20)，仅插补 4 个原始变量
 #   * SEQTaRget trial-period ITT，time.col=自然日历 day
 #   * Rubin 合并 logHR 尺度 (同 v28.4_common.R rubin_pool)
-#   * B=50 bootstrap（与之前 imp1 结果的 B=50 对齐）
+#   * B=200 bootstrap（与之前 imp1 结果的 B=200 对齐）
 #
 # 缺失率审计 → 仅 4 变量需 MICE：
 #   lactate_max (48.9%), albumin_min (25.6%), baseline_sofa_t0 (8.6%), egfr (0.2%)
@@ -38,7 +38,7 @@ dir.create(IMPDIR, showWarnings=F, recursive=T)
 
 # ---- 参数 ----
 SEED <- 20260629L; set.seed(SEED)
-TAU  <- 28L; BOOT <- 50L; M <- 20L
+TAU  <- 28L; BOOT <- 200L; M <- 20L
 
 # ---- DAG14 ----
 DAG14 <- c("age","gender","admission_type","baseline_phosphate",
@@ -201,9 +201,9 @@ for (i in seq_len(M)) {
 log_info(sprintf("  20 个插补集已保存到 %s", IMPDIR))
 
 # ============================================================================
-# 3. 20 个 imp × SEQTaRget B=50 循环
+# 3. 20 个 imp × SEQTaRget B=200 循环
 # ============================================================================
-log_info("Step 3: 20 imp × SEQTaRget B=50")
+log_info("Step 3: 20 imp × SEQTaRget B=200")
 
 extract_log <- function(h0) {
   z <- qnorm(0.975)
@@ -388,6 +388,6 @@ fwrite(rbindlist(lapply(seq_len(M), function(i)
 
 log_info(sprintf("DONE → %s", file.path(OUT_DIR, sprintf("eicu_seqtarget_dag14_m%d_b%d_rubin.csv", M, BOOT))))
 cat("\n========== 最终对比 ==========\n")
-cat(sprintf("eICU DAG14 m=20+B=50+Rubin: HR=%.4f (%.4f–%.4f)\n", pooled$hr, pooled$lci, pooled$uci))
-cat(sprintf("eICU DAG14 imp1+B=50 (旧): HR=1.109 (0.828–1.485)\n"))
+cat(sprintf("eICU DAG14 m=20+B=200+Rubin: HR=%.4f (%.4f–%.4f)\n", pooled$hr, pooled$lci, pooled$uci))
+cat(sprintf("eICU DAG14 imp1+B=200 (旧): HR=1.109 (0.828–1.485)\n"))
 cat(sprintf("MIMIC DAG14 m=20+B=200+Rubin: HR=0.972 (0.892–1.058)\n"))

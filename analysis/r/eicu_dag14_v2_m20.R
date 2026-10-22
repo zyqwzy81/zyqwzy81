@@ -8,7 +8,7 @@ BASE   <- "/data/小米云盘/文档/论文/血磷"
 OUTDIR <- file.path(BASE, "TTE/v28.4/output/tables/eicu_seqtarget")
 IMPDIR <- file.path(BASE, "TTE/v28.4/output/tables/eicu_seqtarget/imps_v2")
 for (d in c(OUTDIR, IMPDIR)) dir.create(d, showWarnings=FALSE, recursive=TRUE)
-TAU   <- 28L; SEED <- 20260629L; BOOT <- 50L; M <- 20L
+TAU   <- 28L; SEED <- 20260629L; BOOT <- 200L; M <- 20L
 
 # DAG14 变量集
 DAG14 <- c("age","gender","admission_type","baseline_phosphate","baseline_sofa",
@@ -123,8 +123,8 @@ cat(sprintf("  MICE done %.1f min\n", as.numeric(difftime(Sys.time(),t0,units="m
 for (i in seq_len(M)) write_parquet(complete(mm, i), file.path(IMPDIR, sprintf("imp%02d.parquet",i)))
 cat(sprintf("  saved %d imp parquets → %s\n", M, IMPDIR))
 
-# ---- 4. 20 imp × SEQTaRget B=50 ----
-cat("\n=== Step 4: 20 imp × SEQTaRget B=50 ===\n")
+# ---- 4. 20 imp × SEQTaRget B=200 ----
+cat("\n=== Step 4: 20 imp × SEQTaRget B=200 ===\n")
 extract_log <- function(h0) {
   z<-qnorm(0.975); hr<-as.numeric(h0["Hazard ratio"])
   list(hr=hr, loghr=log(hr), se=(log(as.numeric(h0["UCI"]))-log(as.numeric(h0["LCI"])))/(2*z))

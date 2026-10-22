@@ -7,7 +7,7 @@ BASE <- "/data/小米云盘/文档/论文/血磷"
 IMPDIR <- file.path(BASE, "sql/result/eicu_mice_imputed")
 OUT_DIR <- file.path(BASE, "TTE/v28.4/output/tables/eicu_seqtarget")
 dir.create(OUT_DIR, showWarnings=F, recursive=T)
-TAU <- 28L; SEED <- 20260629L; BOOT <- 50L; M <- 20L
+TAU <- 28L; SEED <- 20260629L; BOOT <- 200L; M <- 20L
 DAG14 <- c("age","gender","admission_type","baseline_phosphate","baseline_sofa",
            "charlson","egfr","vasoactive_at_t0","invasive_vent_at_t0","sepsis3",
            "lactate_t0","refeeding_risk","corrected_calcium","nutrition_support_type")
@@ -107,7 +107,7 @@ cat(sprintf("MICE done %.1f min\n", as.numeric(difftime(Sys.time(),t0,units="min
 for (i in seq_len(M)) write_parquet(complete(mm, i),
     file.path(IMPDIR, sprintf("eicu_mice_imp%02d.parquet", i)))
 
-# ---- 3. 20 imp × SEQTaRget B=50 ----
+# ---- 3. 20 imp × SEQTaRget B=200 ----
 extract_log <- function(h0) {
   z <- qnorm(0.975)
   list(hr=as.numeric(h0["Hazard ratio"]),
